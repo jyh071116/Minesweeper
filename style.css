@@ -1,0 +1,40 @@
+body {
+    box-sizing: border-box;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+
+ul {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+li {
+    list-style: none;
+}
+
+p {
+    margin: 0;
+}
+
+.flexcontent {
+    display:flex;
+    justify-content:center; 
+    align-items:center;
+}
+
+.mine-circle {
+    border:none;
+    border-radius:50%;
+    display: none;
+}
+
+.number {
+    font-weight: bold;
+    display: none;
+}
