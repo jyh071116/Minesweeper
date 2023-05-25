@@ -5,6 +5,7 @@ let bothclick = 0; //동시에 클릭했는지 확인하는 변수
 let eixstFlagNumber = 0; //근처 깃발 개수 확인하는 변수
 let xylocation : number[][]; //지뢰위치 넣는 배열
 let chorColorlist : number[][] = [];
+let gameend = 0;
 
 const checkfill = (a : number, b : number) :boolean => { //중복 확인하는 함수(시간복잡도 낮춤)
     return document.querySelector(`li[data-x="${a}"][data-y="${b}"]`)?.id != 'already';
@@ -122,7 +123,7 @@ let easy = new map(9, 9, 10);
 let normal = new map(16, 16, 40);
 let hard = new map(30, 16, 99);
 
-let selectLevel = easy; //난이도 지정
+let selectLevel = hard; //난이도 지정
 
 selectLevel.make() //맵 제작
 if (board instanceof HTMLDivElement){
@@ -184,13 +185,14 @@ if (board instanceof HTMLDivElement){
                                                 if (chorCheckfill(a-1, b-1)) chorExtend(a-1, b-1);
                                             }
 
-                                            if (chorposMine instanceof HTMLDivElement && MineInCircle instanceof HTMLDivElement){ //깃발이 잘못되었을 시
+                                            if (chorposMine instanceof HTMLDivElement && MineInCircle instanceof HTMLDivElement && gameend === 0){ //깃발이 잘못되었을 시
                                                 chorposMine.style.display = 'flex';
                                                 MineInCircle.style.display = 'block';
                                                 setTimeout(() => {
-                                                    alert('게임 끝!');
-                                                    window.location.reload();
-                                                }, 100);
+                                                        alert('게임 끝!');
+                                                        window.location.reload();
+                                                }, 0);
+                                                gameend++;
                                             }
                                         }
                                 }
@@ -242,13 +244,14 @@ if (board instanceof HTMLDivElement){
 
                         if (clickcount === 0) selectLevel.landMine(x, y)
                         if (checkmine(x, y)){ //지뢰를 눌렀는지 확인
-                            if (clickposMine instanceof HTMLDivElement && MineInCircle instanceof HTMLDivElement){
+                            if (clickposMine instanceof HTMLDivElement && MineInCircle instanceof HTMLDivElement && gameend === 0){ //깃발이 잘못되었을 시
                                 clickposMine.style.display = 'flex';
                                 MineInCircle.style.display = 'block';
                                 setTimeout(() => {
-                                    alert('게임 끝!');
-                                    window.location.reload();
-                                }, 100);
+                                        alert('게임 끝!');
+                                        window.location.reload();
+                                }, 0);
+                                gameend++;
                             }
                         }
                         else if (clickpos instanceof HTMLLIElement) atOnceShow(x, y);
