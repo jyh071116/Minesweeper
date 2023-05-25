@@ -1,13 +1,33 @@
 const board = document.querySelector('.board'); //보드판 지정
 const color = ['blue', 'green', 'red', 'purple', 'darkgoldenrod', 'skyblue', 'black', 'grey']; //글자 색깔 지정
 let clickcount = 0;
+let bothclick = 0; //동시에 클릭했는지 확인하는 변수
+let eixstFlagNumber = 0; //근처 깃발 개수 확인하는 변수
 let xylocation : number[][]; //지뢰위치 넣는 배열
+let chorColorlist : number[][] = [];
 
-const checkmine = (a : number, b : number) :boolean => {
+const checkfill = (a : number, b : number) :boolean => { //중복 확인하는 함수(시간복잡도 낮춤)
+    return document.querySelector(`li[data-x="${a}"][data-y="${b}"]`)?.id != 'already';
+}
+
+const chorCheckfill = (a : number, b : number) :boolean => { //chor일때 flag와 중복을 확인하는 함수
+    const eixstFlag = document.querySelector(`li[data-x="${a}"][data-y="${b}"] img`)?.className == 'flag';
+    if (eixstFlag) eixstFlagNumber++;
+    return document.querySelector(`li[data-x="${a}"][data-y="${b}"]`)?.id != 'already'&& !eixstFlag;
+}
+
+const checkmine = (a : number, b : number) :boolean => { //지뢰인지 확인하는 함수
     return xylocation.some(item => item[0] === a && item[1] === b);
 }
 
-if (board instanceof HTMLDivElement){
+const chordColor = (a : number, b : number) => { //chor일때 투명도 낮추는 함수
+    const chord = document.querySelector(`li[data-x="${a}"][data-y="${b}"]`);
+    if (chord instanceof HTMLLIElement)
+        chord.style.opacity = '0.6';
+    chorColorlist.push([a, b]);
+}
+
+if (board instanceof HTMLDivElement){ //우클릭 context 막는 조건문
     board.addEventListener('contextmenu', e => e.preventDefault());
 }
 
@@ -89,7 +109,7 @@ class map {
                             nowpos.innerHTML = `
                             <p class="number flexcontent" 
                             style="font-size:${2*this.boxsize/3}px; color:${color[nearbyMinecount-1]};">${nearbyMinecount}</p>`
-                        }
+                        } //근처 지뢰에 따른 숫자 넣기
                     }
                 }
             }
@@ -98,86 +118,145 @@ class map {
     }
 }
 
-let easy = new map(10, 10, 10);
-let normal = new map(18, 14, 40);
-let hard = new map(24, 20, 99);
+let easy = new map(9, 9, 10);
+let normal = new map(16, 16, 40);
+let hard = new map(30, 16, 99);
 
-let selectLevel = easy;
+let selectLevel = easy; //난이도 지정
 
-selectLevel.make()
+selectLevel.make() //맵 제작
 if (board instanceof HTMLDivElement){
     board.addEventListener('mousedown', (e) => {
         if (e.target instanceof HTMLElement){
-            if (e.target instanceof HTMLImageElement && e.target.className === 'flag' && e.which === 3){
+            if (e.target instanceof HTMLImageElement && e.target.className === 'flag' && e.which === 3){ //깃발 다시 누르면 제거하는 조건문
                 e.target.closest('li')?.removeAttribute('id');
                 e.target.remove();
             }
+            if (e.which === 1) bothclick++;
+            else if (e.which === 3) bothclick++;
+
+            if (bothclick === 2) { //chor일때
+                let nowdiv : HTMLParagraphElement | null = null;
+
+                if (e.target instanceof HTMLLIElement) nowdiv = e.target.firstChild as HTMLParagraphElement;
+                else if (e.target instanceof HTMLParagraphElement) nowdiv = e.target;
+
+                const parent = nowdiv?.closest('li');
+
+                if (parent instanceof HTMLLIElement){
+                    if (parent.dataset.x != undefined && parent.dataset.y != undefined){
+                        const x = parseInt(parent.dataset.x);
+                        const y = parseInt(parent.dataset.y);
+
+                        if (nowdiv instanceof HTMLParagraphElement){ //영향 주는 범위 연하게 표현
+                            if (chorCheckfill(x+1, y)) chordColor(x+1, y);
+                            if (chorCheckfill(x-1, y)) chordColor(x-1, y);
+                            if (chorCheckfill(x, y+1)) chordColor(x, y+1);
+                            if (chorCheckfill(x, y-1)) chordColor(x, y-1);
+                            if (chorCheckfill(x+1, y+1)) chordColor(x+1, y+1);
+                            if (chorCheckfill(x+1, y-1)) chordColor(x+1, y-1);
+                            if (chorCheckfill(x-1, y+1)) chordColor(x-1, y+1);
+                            if (chorCheckfill(x-1, y-1)) chordColor(x-1, y-1);
+
+
+                            if (parseInt(nowdiv.innerHTML) == eixstFlagNumber){ //깃발 개수와 숫자가 같은 경우
+                                const chorExtend = (a : number, b : number) => { //자동확장 함수
+                                    let chorOpen = document.querySelector(`li[data-x="${a}"][data-y="${b}"]`);
+                                        let chorOpenP = document.querySelector(`li[data-x="${a}"][data-y="${b}"] p`);
+                                        let chorposMine = document.querySelector(`li[data-x="${a}"][data-y="${b}"] > div`);
+                                        let MineInCircle = document.querySelector(`li[data-x="${a}"][data-y="${b}"] > div > .mine-circle`);
+                                        if (chorOpen instanceof HTMLLIElement){
+                                            chorOpen.id = 'already';
+                                            if ((a+b)%2==0) chorOpen.style.background = '#e5c29f';
+                                            else chorOpen.style.background = '#d7b899';
+
+                                            if (chorOpenP instanceof HTMLParagraphElement){
+                                                chorOpenP.style.display = 'block';
+                                            }
+                                            else if (chorOpenP === null){ //빈 공간 만났을때 자동으로 확장
+                                                if (chorCheckfill(a+1, b)) chorExtend(a+1, b);
+                                                if (chorCheckfill(a-1, b)) chorExtend(a-1, b);
+                                                if (chorCheckfill(a, b+1)) chorExtend(a, b+1);
+                                                if (chorCheckfill(a, b-1)) chorExtend(a, b-1);
+                                                if (chorCheckfill(a+1, b+1)) chorExtend(a+1, b+1);
+                                                if (chorCheckfill(a+1, b-1)) chorExtend(a+1, b-1);
+                                                if (chorCheckfill(a-1, b+1)) chorExtend(a-1, b+1);
+                                                if (chorCheckfill(a-1, b-1)) chorExtend(a-1, b-1);
+                                            }
+
+                                            if (chorposMine instanceof HTMLDivElement && MineInCircle instanceof HTMLDivElement){ //깃발이 잘못되었을 시
+                                                chorposMine.style.display = 'flex';
+                                                MineInCircle.style.display = 'block';
+                                                setTimeout(() => {
+                                                    alert('게임 끝!');
+                                                    window.location.reload();
+                                                }, 100);
+                                            }
+                                        }
+                                }
+
+                                chorColorlist.forEach(a => {
+                                    chorExtend(a[0], a[1]);
+                                })
+                            }
+                        }
+                    }
+                }
+            }
+
             if (e.target.dataset.x != undefined && e.target.dataset.y !=undefined){
                 const x = parseInt(e.target.dataset.x);
                 const y = parseInt(e.target.dataset.y);
-                let clickpos = document.querySelector(`li[data-x="${x}"][data-y="${y}"]`);
-                let clickposP = document.querySelector(`li[data-x="${x}"][data-y="${y}"] p`);
-                let clickposMine = document.querySelector(`li[data-x="${x}"][data-y="${y}"] > div`);
-                let MineInCircle = document.querySelector(`li[data-x="${x}"][data-y="${y}"] > div > .mine-circle`);
 
-                const boxSlelect = (a : number, b : number) => {
-                        clickpos = document.querySelector(`li[data-x="${a}"][data-y="${b}"]`);
-                        clickposP = document.querySelector(`li[data-x="${a}"][data-y="${b}"] p`);
-                        clickposMine = document.querySelector(`li[data-x="${a}"][data-y="${b}"] > div`);
-                        MineInCircle = document.querySelector(`li[data-x="${a}"][data-y="${b}"] > div > .mine-circle`);
-                }
+                const extend = (x : number, y : number) => {
+                    let clickpos = document.querySelector(`li[data-x="${x}"][data-y="${y}"]`);
+                    let clickposP = document.querySelector(`li[data-x="${x}"][data-y="${y}"] p`);
+                    let clickposMine = document.querySelector(`li[data-x="${x}"][data-y="${y}"] > div`);
+                    let MineInCircle = document.querySelector(`li[data-x="${x}"][data-y="${y}"] > div > .mine-circle`);
 
-
-                if (e.which === 1){
-                    const atOnceShow = (a : number, b : number) => {
-                        boxSlelect(a, b);
-                        if (clickpos instanceof HTMLLIElement){
-                            clickpos.id = 'already';
-                            if ((a+b)%2==0) clickpos.style.background = '#e5c29f';
-                            else clickpos.style.background = '#d7b899';
-    
-                            if (clickposP instanceof HTMLParagraphElement){
-                                clickposP.style.display = 'block';
-                            }
-                            else if (clickposP === null){ //빈 공간 눌렀을때 자동으로 확장
-                                if (document.querySelector(`li[data-x="${a+1}"][data-y="${b}"]`)?.id != 'already') atOnceShow(a+1, b);
-                                if (document.querySelector(`li[data-x="${a-1}"][data-y="${b}"]`)?.id != 'already') atOnceShow(a-1, b);
-                                if (document.querySelector(`li[data-x="${a}"][data-y="${b+1}"]`)?.id != 'already') atOnceShow(a, b+1);
-                                if (document.querySelector(`li[data-x="${a}"][data-y="${b-1}"]`)?.id != 'already') atOnceShow(a, b-1);
-                                if (document.querySelector(`li[data-x="${a+1}"][data-y="${b+1}"]`)?.id != 'already') atOnceShow(a+1, b+1);
-                                if (document.querySelector(`li[data-x="${a+1}"][data-y="${b-1}"]`)?.id != 'already') atOnceShow(a+1, b-1);
-                                if (document.querySelector(`li[data-x="${a-1}"][data-y="${b+1}"]`)?.id != 'already') atOnceShow(a-1, b+1);
-                                if (document.querySelector(`li[data-x="${a-1}"][data-y="${b-1}"]`)?.id != 'already') atOnceShow(a-1, b-1);
+                    if (e.which === 1){
+                        const atOnceShow = (a : number, b : number) => {
+                            clickpos = document.querySelector(`li[data-x="${a}"][data-y="${b}"]`);
+                            clickposP = document.querySelector(`li[data-x="${a}"][data-y="${b}"] p`);
+                            if (clickpos instanceof HTMLLIElement){
+                                document.querySelector(`li[data-x="${a}"][data-y="${b}"] img`)?.remove();
+                                clickpos.id = 'already';
+                                if ((a+b)%2==0) clickpos.style.background = '#e5c29f';
+                                else clickpos.style.background = '#d7b899';
+        
+                                if (clickposP instanceof HTMLParagraphElement){
+                                    clickposP.style.display = 'block';
+                                }
+                                else if (clickposP === null){ //빈 공간 눌렀을때 자동으로 확장
+                                    if (checkfill(a+1, b)) atOnceShow(a+1, b);
+                                    if (checkfill(a-1, b)) atOnceShow(a-1, b);
+                                    if (checkfill(a, b+1)) atOnceShow(a, b+1);
+                                    if (checkfill(a, b-1)) atOnceShow(a, b-1);
+                                    if (checkfill(a+1, b+1)) atOnceShow(a+1, b+1);
+                                    if (checkfill(a+1, b-1)) atOnceShow(a+1, b-1);
+                                    if (checkfill(a-1, b+1)) atOnceShow(a-1, b+1);
+                                    if (checkfill(a-1, b-1)) atOnceShow(a-1, b-1);
+                                }
                             }
                         }
-                    }
 
-                    if (clickcount === 0) selectLevel.landMine(x, y)
-                    if (checkmine(x, y)){ //지뢰를 눌렀는지 확인
-                        if (clickposMine instanceof HTMLDivElement && MineInCircle instanceof HTMLDivElement){
-                            clickposMine.style.display = 'flex';
-                            MineInCircle.style.display = 'block';
-                            setTimeout(() => {
-                                alert('게임 끝!');
-                                window.location.reload();
-                            }, 100);
+                        if (clickcount === 0) selectLevel.landMine(x, y)
+                        if (checkmine(x, y)){ //지뢰를 눌렀는지 확인
+                            if (clickposMine instanceof HTMLDivElement && MineInCircle instanceof HTMLDivElement){
+                                clickposMine.style.display = 'flex';
+                                MineInCircle.style.display = 'block';
+                                setTimeout(() => {
+                                    alert('게임 끝!');
+                                    window.location.reload();
+                                }, 100);
+                            }
                         }
+                        else if (clickpos instanceof HTMLLIElement) atOnceShow(x, y);
+                        clickcount++;
                     }
-                    else if (clickpos instanceof HTMLLIElement){
-                        clickpos.id = 'already';
-                        if ((x+y)%2==0) clickpos.style.background = '#e5c29f';
-                        else clickpos.style.background = '#d7b899';
-
-                        if (clickposP instanceof HTMLParagraphElement){
-                            clickposP.style.display = 'block';
-                        }
-                        else if (clickposP === null){
-                            atOnceShow(x, y);
-                        }
-                    }
-                    clickcount++;
                 }
-                else if (e.which === 3){
+                extend(x, y);
+                if (e.which === 3){
                     if (e.target.id != 'already' && e.target.id != 'liFlag'){
                         e.target.innerHTML += `<img src="flag.svg" class="flag">`;
                         e.target.id = 'liFlag';
@@ -185,5 +264,15 @@ if (board instanceof HTMLDivElement){
                 }
             }
         }
+    })
+    board.addEventListener('mouseup', () =>{
+        chorColorlist.forEach(a => {
+            const fillChord = document.querySelector(`li[data-x="${a[0]}"][data-y="${a[1]}"]`);
+            if (fillChord instanceof HTMLLIElement)
+                fillChord.style.opacity = '1';
+        })
+        bothclick=0;
+        eixstFlagNumber = 0;
+        chorColorlist = [];
     })
 }
