@@ -7,6 +7,10 @@ const checkmine = (a : number, b : number) :boolean => {
     return xylocation.some(item => item[0] === a && item[1] === b);
 }
 
+if (board instanceof HTMLDivElement){
+    board.addEventListener('contextmenu', e => e.preventDefault());
+}
+
 class map {
     constructor(public xSize : number, public ySize : number, public minecount : number){} //X크기, Y크기, 지뢰개수 지정
     boxsize = 600/this.ySize; //한 칸당 크기 지정
@@ -98,34 +102,86 @@ let easy = new map(10, 10, 10);
 let normal = new map(18, 14, 40);
 let hard = new map(24, 20, 99);
 
-easy.make()
+let selectLevel = easy;
+
+selectLevel.make()
 if (board instanceof HTMLDivElement){
     board.addEventListener('mousedown', (e) => {
         if (e.target instanceof HTMLElement){
+            if (e.target instanceof HTMLImageElement && e.target.className === 'flag' && e.which === 3){
+                e.target.closest('li')?.removeAttribute('id');
+                e.target.remove();
+            }
             if (e.target.dataset.x != undefined && e.target.dataset.y !=undefined){
                 const x = parseInt(e.target.dataset.x);
                 const y = parseInt(e.target.dataset.y);
-                const clickpos = document.querySelector(`li[data-x="${x}"][data-y="${y}"]`);
-                const clickposP = document.querySelector(`li[data-x="${x}"][data-y="${y}"] p`);
+                let clickpos = document.querySelector(`li[data-x="${x}"][data-y="${y}"]`);
+                let clickposP = document.querySelector(`li[data-x="${x}"][data-y="${y}"] p`);
+                let clickposMine = document.querySelector(`li[data-x="${x}"][data-y="${y}"] > div`);
+                let MineInCircle = document.querySelector(`li[data-x="${x}"][data-y="${y}"] > div > .mine-circle`);
+
+                const boxSlelect = (a : number, b : number) => {
+                        clickpos = document.querySelector(`li[data-x="${a}"][data-y="${b}"]`);
+                        clickposP = document.querySelector(`li[data-x="${a}"][data-y="${b}"] p`);
+                        clickposMine = document.querySelector(`li[data-x="${a}"][data-y="${b}"] > div`);
+                        MineInCircle = document.querySelector(`li[data-x="${a}"][data-y="${b}"] > div > .mine-circle`);
+                }
+
 
                 if (e.which === 1){
-                    if (clickcount === 0) easy.landMine(x, y)
-                    if (checkmine(x, y)){
-                        alert('게임 끝!');
-                        window.location.reload();
+                    const atOnceShow = (a : number, b : number) => {
+                        boxSlelect(a, b);
+                        if (clickpos instanceof HTMLLIElement){
+                            clickpos.id = 'already';
+                            if ((a+b)%2==0) clickpos.style.background = '#e5c29f';
+                            else clickpos.style.background = '#d7b899';
+    
+                            if (clickposP instanceof HTMLParagraphElement){
+                                clickposP.style.display = 'block';
+                            }
+                            else if (clickposP === null){ //빈 공간 눌렀을때 자동으로 확장
+                                if (document.querySelector(`li[data-x="${a+1}"][data-y="${b}"]`)?.id != 'already') atOnceShow(a+1, b);
+                                if (document.querySelector(`li[data-x="${a-1}"][data-y="${b}"]`)?.id != 'already') atOnceShow(a-1, b);
+                                if (document.querySelector(`li[data-x="${a}"][data-y="${b+1}"]`)?.id != 'already') atOnceShow(a, b+1);
+                                if (document.querySelector(`li[data-x="${a}"][data-y="${b-1}"]`)?.id != 'already') atOnceShow(a, b-1);
+                                if (document.querySelector(`li[data-x="${a+1}"][data-y="${b+1}"]`)?.id != 'already') atOnceShow(a+1, b+1);
+                                if (document.querySelector(`li[data-x="${a+1}"][data-y="${b-1}"]`)?.id != 'already') atOnceShow(a+1, b-1);
+                                if (document.querySelector(`li[data-x="${a-1}"][data-y="${b+1}"]`)?.id != 'already') atOnceShow(a-1, b+1);
+                                if (document.querySelector(`li[data-x="${a-1}"][data-y="${b-1}"]`)?.id != 'already') atOnceShow(a-1, b-1);
+                            }
+                        }
                     }
-                    if (clickposP instanceof HTMLParagraphElement){
-                        clickposP.innerHTML
-                        clickposP.style.display = 'block';
+
+                    if (clickcount === 0) selectLevel.landMine(x, y)
+                    if (checkmine(x, y)){ //지뢰를 눌렀는지 확인
+                        if (clickposMine instanceof HTMLDivElement && MineInCircle instanceof HTMLDivElement){
+                            clickposMine.style.display = 'flex';
+                            MineInCircle.style.display = 'block';
+                            setTimeout(() => {
+                                alert('게임 끝!');
+                                window.location.reload();
+                            }, 100);
+                        }
                     }
-                    if (clickpos instanceof HTMLLIElement){
-                        if ((x+y)%2==0) clickpos.style.background = '#d7b899';
-                        else clickpos.style.background = '#e5c29f';
+                    else if (clickpos instanceof HTMLLIElement){
+                        clickpos.id = 'already';
+                        if ((x+y)%2==0) clickpos.style.background = '#e5c29f';
+                        else clickpos.style.background = '#d7b899';
+
+                        if (clickposP instanceof HTMLParagraphElement){
+                            clickposP.style.display = 'block';
+                        }
+                        else if (clickposP === null){
+                            atOnceShow(x, y);
+                        }
                     }
                     clickcount++;
                 }
                 else if (e.which === 3){
-                    
+                    if (e.target.id != 'already' && e.target.id != 'liFlag'){
+                        e.target.innerHTML += `<img src="flag.svg" class="flag">`;
+                        e.target.id = 'liFlag';
+                    }
                 }
             }
         }

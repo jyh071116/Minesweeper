@@ -2,8 +2,12 @@ body {
     box-sizing: border-box;
     text-align: center;
     display: flex;
-    justify-content: center;
     flex-direction: column;
+    justify-content: center;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-use-select: none;
+    user-select: none;
 }
 
 ul {
@@ -20,6 +24,14 @@ li {
 
 p {
     margin: 0;
+}
+
+ul > :not(#already):hover{
+    background: rgb(214, 255, 152)!important;
+}
+
+ul > #already:hover{
+    background: bisque!important;
 }
 
 .flexcontent {
