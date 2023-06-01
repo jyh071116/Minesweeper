@@ -8,8 +8,34 @@
     <link href="style.css" rel="stylesheet">
 </head>
 <body>
+    <form id="custom">
+        <div class="black-bg">
+            <div class="select-bar">
+                <h3>Custom</h3>
+                <h2 class="X_button">X</h2>
+                <label for="rows">가로줄: </label>
+                <input id="rows" type="number" min="5" max="50" value="9"><br>
+                <label for="cols">세로줄: </label>
+                <input id="cols" type="number" min="5" max="20" value="9"><br>
+                <label for="mines">지뢰 갯수: </label>
+                <input id="mines" type="number" min="1" max="750" value="10"><br><br>
+                <button class="submit" type="button">확인</button>
+            </div>
+        </div>
+    </form>
+    
     <h1>Minesweeper</h1>
-    <div class="flag"></div>
+    <div class="option">
+        <form id="level">
+            <select class="level" onchange="changeLevel()">
+                <option value="easy">easy</option>
+                <option value="normal">normal</option>
+                <option value="hard">hard</option>
+                <option value="custom">custom</option>
+            </select>
+        </form>
+        <div></div>
+    </div>
     <div class="board"></div>
     <script src="app.js"></script>
 </body>
